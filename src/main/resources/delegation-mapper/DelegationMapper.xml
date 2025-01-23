@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.eorion.bo.enhancement.delegation.mapper.DelegationManagementMapper">
+
+    <select id="selectDelegationPageList" resultType="com.eorion.bo.enhancement.delegation.domain.entity.Delegation">
+        SELECT id,
+        delegate_name,
+        owner_user_id,
+        owner_user_name,
+        delegate_to_user_id,
+        delegate_to_user_name,
+        start_date_ts AS startDateTime,
+        end_date_ts AS endDateTime,
+        user_groups AS groups,tenant_txt AS tenant,CREATED_TS,UPDATED_TS,CREATE_BY_TXT AS createdBy,UPDATED_BY_TXT AS
+        updatedBy,DELETE_FG AS deleteFlag
+        FROM ENHANCEMENT_DELEGATION
+        WHERE DELETE_FG=0
+
+        <if test="tenant != null and tenant != ''">
+            AND TENANT_TXT = #{tenant}
+        </if>
+        <if test="delegateNameLike != null and delegateNameLike != ''">
+            AND DELEGATE_NAME LIKE CONCAT('%', #{delegateNameLike}, '%')
+        </if>
+        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
+            AND DELEGATE_TO_USER_NAME LIKE CONCAT('%', #{delegateToUserNameLike}, '%')
+        </if>
+        <if test="ownerUserId != null and ownerUserId != ''">
+            AND OWNER_USER_ID = #{ownerUserId}
+        </if>
+        <if test="status != null and status != ''">
+            <choose>
+                <when test="status == 1">
+                    AND END_DATE_TS >= #{curTs}
+                </when>
+                <when test="status == 0">
+                    AND END_DATE_TS &lt; #{curTs}
+                </when>
+            </choose>
+        </if>
+
+        <if test="delegateToUserId != null and delegateToUserId != ''">
+            AND DELEGATE_TO_USER_ID = #{delegateToUserId}
+        </if>
+        <if test="startDateTimeBefore != null">
+            AND START_DATE_TS &lt;= #{startDateTimeBefore}
+        </if>
+        <if test="startDateTimeAfter != null">
+            AND START_DATE_TS &gt;= #{startDateTimeAfter}
+        </if>
+        <if test="endDateTimeBefore != null">
+            AND END_DATE_TS &lt;= #{endDateTimeBefore}
+        </if>
+        <if test="endDateTimeAfter != null">
+            AND END_DATE_TS &gt;= #{endDateTimeAfter}
+        </if>
+        <include refid="groupSelect"/>
+
+        <if test="orderSort != null and orderSort != ''">
+            ORDER BY ${orderSort}
+        </if>
+        OFFSET #{firstResult} ROWS FETCH NEXT #{maxResults} ROWS ONLY
+    </select>
+
+    <sql id="groupSelect" databaseId="postgresql">
+        <if test="groups != null and groups.size() > 0">
+            AND (
+            EXISTS (SELECT 1 FROM regexp_split_to_table(USER_GROUPS, ',') AS a WHERE a IN
+            <foreach collection="groups" item="group" open="(" close=")" separator=",">
+                #{group}
+            </foreach>
+            ))
+        </if>
+    </sql>
+    <sql id="groupSelect" databaseId="h2">
+        <if test="groups != null and groups.size() > 0">
+            AND (
+            <foreach collection="groups" item="group" separator="OR">
+                REGEXP_REPLACE(USER_GROUPS, concat('(^|,)',#{group},'($|,)'), '') != USER_GROUPS
+            </foreach>
+            )
+        </if>
+    </sql>
+    <sql id="groupSelect" databaseId="mysql">
+        <if test="groups != null and groups.size() > 0">
+            AND (
+            <foreach collection="groups" item="group" open="(" close=")" separator="OR">
+                FIND_IN_SET(#{group}, user_group_txt) > 0
+            </foreach>
+            )
+        </if>
+        )
+    </sql>
+
+    <select id="selectDelegationCount" resultType="long">
+        SELECT COUNT(*) FROM ENHANCEMENT_DELEGATION
+        WHERE DELETE_FG=0
+        <if test="tenant != null and tenant != ''">
+            AND TENANT_TXT = #{tenant}
+        </if>
+        <if test="delegateNameLike != null and delegateNameLike != ''">
+            AND DELEGATE_NAME LIKE CONCAT('%', #{delegateNameLike}, '%')
+        </if>
+        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
+            AND DELEGATE_TO_USER_NAME LIKE CONCAT('%', #{delegateToUserNameLike}, '%')
+        </if>
+        <if test="ownerUserId != null and ownerUserId != ''">
+            AND OWNER_USER_ID = #{ownerUserId}
+        </if>
+        <if test="delegateToUserId != null and delegateToUserId != ''">
+            AND DELEGATE_TO_USER_ID = #{delegateToUserId}
+        </if>
+        <if test="status != null and status != ''">
+            <choose>
+                <when test="status == 1">
+                    AND END_DATE_TS >= #{curTs}
+                </when>
+                <when test="status == 0">
+                    AND END_DATE_TS &lt; #{curTs}
+                </when>
+            </choose>
+        </if>
+        <if test="startDateTimeBefore != null">
+            AND START_DATE_TS &lt;= #{startDateTimeBefore}
+        </if>
+        <if test="startDateTimeAfter != null">
+            AND START_DATE_TS &gt;= #{startDateTimeAfter}
+        </if>
+        <if test="endDateTimeBefore != null">
+            AND END_DATE_TS &lt;= #{endDateTimeBefore}
+        </if>
+        <if test="endDateTimeAfter != null">
+            AND END_DATE_TS &gt;= #{endDateTimeAfter}
+        </if>
+        <include refid="groupSelect"/>
+    </select>
+
+</mapper>
