@@ -12,19 +12,17 @@
         delegate_to_user_name,
         start_date_ts AS startDateTime,
         end_date_ts AS endDateTime,
-        user_groups AS groups,tenant_txt AS tenant,CREATED_TS,UPDATED_TS,CREATE_BY_TXT AS createdBy,UPDATED_BY_TXT AS
-        updatedBy,DELETE_FG AS deleteFlag
+        user_groups AS groups,
+        tenant_txt AS tenant,
+        CREATED_TS,
+        UPDATED_TS,
+        CREATE_BY_TXT AS createdBy,
+        UPDATED_BY_TXT AS updatedBy,
+        DELETE_FG AS deleteFlag
         FROM ENHANCEMENT_DELEGATION
         WHERE DELETE_FG=0
-
         <if test="tenant != null and tenant != ''">
             AND TENANT_TXT = #{tenant}
-        </if>
-        <if test="delegateNameLike != null and delegateNameLike != ''">
-            AND DELEGATE_NAME LIKE CONCAT('%', #{delegateNameLike}, '%')
-        </if>
-        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
-            AND DELEGATE_TO_USER_NAME LIKE CONCAT('%', #{delegateToUserNameLike}, '%')
         </if>
         <if test="ownerUserId != null and ownerUserId != ''">
             AND OWNER_USER_ID = #{ownerUserId}
@@ -39,7 +37,6 @@
                 </when>
             </choose>
         </if>
-
         <if test="delegateToUserId != null and delegateToUserId != ''">
             AND DELEGATE_TO_USER_ID = #{delegateToUserId}
         </if>
@@ -55,13 +52,37 @@
         <if test="endDateTimeAfter != null">
             AND END_DATE_TS &gt;= #{endDateTimeAfter}
         </if>
+        <include refid="likeClauses" />
         <include refid="groupSelect"/>
-
         <if test="orderSort != null and orderSort != ''">
             ORDER BY ${orderSort}
         </if>
-        OFFSET #{firstResult} ROWS FETCH NEXT #{maxResults} ROWS ONLY
+        <choose>
+            <when test="_databaseId == 'mysql'">
+                LIMIT #{maxResults} OFFSET #{firstResult};
+            </when>
+            <otherwise>
+                OFFSET #{firstResult} ROWS FETCH NEXT #{maxResults} ROWS ONLY;
+            </otherwise>
+        </choose>
     </select>
+    
+    <sql id="likeClauses">
+        <if test="delegateNameLike != null and delegateNameLike != ''">
+            AND DELEGATE_NAME LIKE CONCAT('%', #{delegateNameLike}, '%')
+        </if>
+        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
+            AND DELEGATE_TO_USER_NAME LIKE CONCAT('%', #{delegateToUserNameLike}, '%')
+        </if>
+    </sql>
+    <sql id="likeClauses" databaseId="oracle">
+        <if test="delegateNameLike != null and delegateNameLike != ''">
+            AND DELEGATE_NAME LIKE '%'|| #{delegateNameLike} || '%'
+        </if>
+        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
+            AND DELEGATE_TO_USER_NAME LIKE '%' || #{delegateToUserNameLike} || '%'
+        </if>
+    </sql>
 
     <sql id="groupSelect" databaseId="postgresql">
         <if test="groups != null and groups.size() > 0">
@@ -92,18 +113,22 @@
         </if>
         )
     </sql>
+    <sql id="groupSelect" databaseId="oracle">
+        <if test="groups != null and groups.size() > 0">
+            AND (
+            <foreach collection="groups" item="group" open="(" close=")" separator="OR">
+                REGEXP_LIKE(user_group_txt, '(^|,)' || #{group} || '(,|$)')
+            </foreach>
+            )
+        </if>
+        )
+    </sql>
 
     <select id="selectDelegationCount" resultType="long">
         SELECT COUNT(*) FROM ENHANCEMENT_DELEGATION
         WHERE DELETE_FG=0
         <if test="tenant != null and tenant != ''">
             AND TENANT_TXT = #{tenant}
-        </if>
-        <if test="delegateNameLike != null and delegateNameLike != ''">
-            AND DELEGATE_NAME LIKE CONCAT('%', #{delegateNameLike}, '%')
-        </if>
-        <if test="delegateToUserNameLike != null and delegateToUserNameLike != ''">
-            AND DELEGATE_TO_USER_NAME LIKE CONCAT('%', #{delegateToUserNameLike}, '%')
         </if>
         <if test="ownerUserId != null and ownerUserId != ''">
             AND OWNER_USER_ID = #{ownerUserId}
@@ -133,6 +158,7 @@
         <if test="endDateTimeAfter != null">
             AND END_DATE_TS &gt;= #{endDateTimeAfter}
         </if>
+        <include refid="likeClauses" />
         <include refid="groupSelect"/>
     </select>
 
