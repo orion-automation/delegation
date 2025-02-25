@@ -20,7 +20,7 @@ jobs:
           java-version: 17
           cache: 'maven'
       - name: 'Run testcontainers tests'
-        run: mvn test -P testcontainersTest --file pom.xml
+        run: mvn test -P testcontainersTest -Dspring.profiles.active=testcontainers --file pom.xml
       - if: failure()
         name: 'Create failed issue'
         uses: JasonEtco/create-an-issue@v2
