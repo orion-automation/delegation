@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +37,9 @@ public class DelegationControllerTest {
         headers.set("Authorization", "Basic " + Base64.getEncoder().encodeToString("demo:demo".getBytes(StandardCharsets.UTF_8)));
     }
 
-    private final InputStreamReader delegationManagementDeleteReader = new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream("sql/delete-all.sql")));
+    @Value("${spring.profiles.active:default}") // "default" if no profile is set
+    private String activeProfile;
+
     private final ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private DelegationManagementRepository repository;
@@ -47,9 +50,16 @@ public class DelegationControllerTest {
     @Autowired
     private BatchSQLExecutor executor;
 
+    protected InputStreamReader getDelegationManagementDeleteReader() {
+        if (activeProfile.equals("testcontainers")) {
+            return new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream("sql/delete-all.oracle.sql")));
+        }
+        return new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream("sql/delete-all.sql")));
+    }
+
     @BeforeEach
     public void clearUp() throws SQLException {
-        executor.batchExecuteSqlFromFile(delegationManagementDeleteReader);
+        executor.batchExecuteSqlFromFile(getDelegationManagementDeleteReader());
         identityService.setAuthenticatedUserId("demo");
     }
 
