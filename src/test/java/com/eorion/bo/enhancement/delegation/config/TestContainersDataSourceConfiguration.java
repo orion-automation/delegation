@@ -1,5 +1,6 @@
 package com.eorion.bo.enhancement.delegation.config;
 
+import jakarta.annotation.PostConstruct;
 import liquibase.integration.spring.SpringLiquibase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -7,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.testcontainers.junit.jupiter.Container;
@@ -19,6 +21,12 @@ import java.time.Duration;
 @Slf4j
 public class TestContainersDataSourceConfiguration {
     static String image = "gvenzl/oracle-free:23.6-slim-faststart";
+
+    @PostConstruct
+    public void init() {
+        System.setProperty(AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME, "testcontainers");
+    }
+
     @Container
     static OracleContainer oracleContainer = new OracleContainer(image)
             .withStartupTimeout(Duration.ofMinutes(3))
