@@ -106,6 +106,7 @@ public class DelegationControllerTest {
         updateDTO.setDelegateName("name");
         updateDTO.setGroups("groups");
         updateDTO.setDelegateToUserId("tom");
+        updateDTO.setDelegateToUserName("userNameTom");
         updateDTO.setStartDateTime(System.currentTimeMillis());
         updateDTO.setEndDateTime(System.currentTimeMillis());
         mockMvc.perform(
@@ -118,6 +119,12 @@ public class DelegationControllerTest {
         var management = repository.getById(saveDTO.getId());
         Assertions.assertNotNull(management);
         Assertions.assertEquals(management.getDelegateToUserId(), updateDTO.getDelegateToUserId());
+        Assertions.assertEquals(management.getDelegateName(), updateDTO.getDelegateName());
+        Assertions.assertEquals(management.getStartDateTime(), updateDTO.getStartDateTime());
+        Assertions.assertEquals(management.getEndDateTime(), updateDTO.getEndDateTime());
+        Assertions.assertEquals(management.getDelegateToUserName(), updateDTO.getDelegateToUserName());
+        Assertions.assertEquals(management.getGroups(), updateDTO.getGroups());
+
     }
 
     @Test
